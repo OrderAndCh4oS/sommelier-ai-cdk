@@ -1,10 +1,11 @@
 #!/usr/bin/env node
 import 'source-map-support/register';
 import * as cdk from 'aws-cdk-lib';
-import { SommelierAiCdkStack } from '../lib/sommelier-ai-cdk-stack';
+import { SommelierAiCdkStack } from '../lib/sommelier-ai-stack';
+import envs from './environment';
 
 const app = new cdk.App();
-new SommelierAiCdkStack(app, 'SommelierAiCdkStack', {
+new SommelierAiCdkStack(app, 'SommelierAiStack', {
   /* If you don't specify 'env', this stack will be environment-agnostic.
    * Account/Region-dependent features and context lookups will not work,
    * but a single synthesized template can be deployed anywhere. */
@@ -18,4 +19,4 @@ new SommelierAiCdkStack(app, 'SommelierAiCdkStack', {
   // env: { account: '123456789012', region: 'us-east-1' },
 
   /* For more information, see https://docs.aws.amazon.com/cdk/latest/guide/environments.html */
-});
+}, envs);
