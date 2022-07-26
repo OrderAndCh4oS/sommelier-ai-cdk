@@ -1,8 +1,8 @@
 import axios from "axios";
 import {APIGatewayProxyEvent, APIGatewayProxyResult, Handler} from "aws-lambda";
 
-if(!process.env.OPEN_AI_API_URL) throw new Error('Missing OPEN_AI_API_URL');
-if(!process.env.OPEN_AI_API_KEY) throw new Error('Missing OPEN_AI_API_KEY');
+if (!process.env.OPEN_AI_API_URL) throw new Error('Missing OPEN_AI_API_URL');
+if (!process.env.OPEN_AI_API_KEY) throw new Error('Missing OPEN_AI_API_KEY');
 
 const OPEN_AI_API_URL = process.env.OPEN_AI_API_URL;
 const OPEN_AI_API_KEY = process.env.OPEN_AI_API_KEY;
@@ -15,7 +15,11 @@ export const handler: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = asy
     };
 
     const prompt = body.prompt
-    if(!prompt) return {statusCode: 400, body: JSON.stringify({error: 'MISSING_PROMPT'})};
+    if (!prompt) return {
+        statusCode: 400,
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({error: 'MISSING_PROMPT'})
+    };
 
     try {
         const response = await axios.post(
@@ -39,9 +43,21 @@ export const handler: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = asy
         );
 
         return response.status === 200
-            ? {statusCode: 200, body: JSON.stringify(response.data)}
-            : {statusCode: 500, body: JSON.stringify({error: 'REQUEST_ERROR'})};
+            ? {
+                statusCode: 200,
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify(response.data)
+            }
+            : {
+                statusCode: 500,
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({error: 'REQUEST_ERROR'})
+            };
     } catch {
-        return {statusCode: 500, body: JSON.stringify({error: 'REQUEST_FAILURE'})};
+        return {
+            statusCode: 500,
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({error: 'REQUEST_FAILURE'})
+        };
     }
 };

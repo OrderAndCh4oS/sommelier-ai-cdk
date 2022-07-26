@@ -1,0 +1,10 @@
+openai
+numpy
+pandas
+python-dotenv
+matplotlib
+plotly
+scipy
+sklearn
+requests
+python-jose

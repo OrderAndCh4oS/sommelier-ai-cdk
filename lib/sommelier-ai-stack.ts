@@ -1,6 +1,8 @@
 import {CfnResource, Duration, Stack, StackProps} from 'aws-cdk-lib';
+import {Code, Function, Handler, Runtime} from 'aws-cdk-lib/aws-lambda'
+
 import {Construct} from 'constructs';
-import {AuthorizationType, LambdaIntegration, RestApi, CfnAuthorizer} from "aws-cdk-lib/aws-apigateway";
+import {AuthorizationType, CfnAuthorizer, LambdaIntegration, RestApi} from "aws-cdk-lib/aws-apigateway";
 import {NodejsFunction} from "aws-cdk-lib/aws-lambda-nodejs";
 import {PolicyDocument, Role, ServicePrincipal} from "aws-cdk-lib/aws-iam";
 import {Environment} from "../bin/environment";
@@ -9,7 +11,7 @@ export class SommelierAiCdkStack extends Stack {
     constructor(scope: Construct, id: string, props?: StackProps, envs?: Environment) {
         super(scope, id, props);
 
-        if(!envs) throw Error('Missing envs param')
+        if (!envs) throw Error('Missing envs param')
 
         const role = new Role(this, 'SommelierAi_Role', {
             roleName: 'sommelier-ai-role',
@@ -47,6 +49,8 @@ export class SommelierAiCdkStack extends Stack {
             authorizerCredentials: role.roleArn
         });
 
+        const authoriserLogicalId = authorizer.logicalId;
+
         const tastingNotesHandler = new NodejsFunction(this, 'SommelierAiCustom_TastingNotes', {
             entry: 'lambda/handlers/tasting-notes.ts',
             timeout: Duration.seconds(6),
@@ -56,18 +60,42 @@ export class SommelierAiCdkStack extends Stack {
             }
         });
 
-        const method = api.root.addMethod(
+        const tastingNotesRoute = api.root.addResource('tasting-notes').addMethod(
             'post',
             new LambdaIntegration(tastingNotesHandler),
             {
                 authorizationType: AuthorizationType.CUSTOM,
             }
         );
-        const resource = method.node.findChild('Resource');
-        const logicalId = authorizer.logicalId;
+        const resource = tastingNotesRoute.node.findChild('Resource');
 
         (resource as CfnResource).addPropertyOverride('AuthorizationType', AuthorizationType.CUSTOM);
-        (resource as CfnResource).addPropertyOverride('AuthorizerId', { Ref: logicalId });
+        (resource as CfnResource).addPropertyOverride('AuthorizerId', {Ref: authoriserLogicalId});
+
+        const recommendationsHandler = new Function(this, 'SommelierAi_Recommendations', {
+            handler: Handler.FROM_IMAGE,
+            runtime: Runtime.FROM_IMAGE,
+            code: Code.fromAssetImage('images/python', {
+                exclude: ['cdk.out'],
+            }),
+            timeout: Duration.seconds(30),
+            memorySize: 1024,
+            environment: {
+                OPEN_AI_API_KEY: envs.OPEN_AI_API_KEY
+            }
+        });
+
+        const recommendationsRoute = api.root.addResource('recommendations').addMethod(
+            'post',
+            new LambdaIntegration(recommendationsHandler),
+            {
+                authorizationType: AuthorizationType.CUSTOM,
+            }
+        );
+        const recommendationsResource = recommendationsRoute.node.findChild('Resource');
+
+        (recommendationsResource as CfnResource).addPropertyOverride('AuthorizationType', AuthorizationType.CUSTOM);
+        (recommendationsResource as CfnResource).addPropertyOverride('AuthorizerId', {Ref: authoriserLogicalId});
     }
 }
 
