@@ -1,25 +1,35 @@
 #!/usr/bin/env python3
 import os
+
+import boto3
+
 import json
+import requests
+
+
 import numpy as np
-import openai
 import pandas as pd
-from dotenv import load_dotenv
+import openai
 from openai.embeddings_utils import (
     get_embedding,
     distances_from_embeddings,
     indices_of_nearest_neighbors_from_distances,
     cosine_similarity
 )
-from functools import wraps
-import requests
-from jose import jwt
-
-load_dotenv()
+from io import StringIO
 
 openai.api_key = os.getenv('OPEN_AI_API_KEY')
+bucket_name = os.getenv('BUCKET_NAME')
+data_csv = os.getenv('DATA_CSV')
 
-df = pd.read_csv('wine_tasting_notes_embeddings__curie_combined.csv')
+s3_client = boto3.client("s3")
+
+file = s3_client.get_object(
+    Bucket=bucket_name,
+    Key="wine_tasting_notes_embeddings__curie_combined.csv"
+)["Body"]
+
+df = pd.read_csv(file)
 df['curie_similarity'] = df.curie_similarity.apply(eval).apply(np.array)
 df['curie_search'] = df.curie_search.apply(eval).apply(np.array)
 

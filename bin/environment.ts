@@ -1,4 +1,5 @@
 import {config} from "dotenv";
+import * as process from "process";
 
 config();
 
@@ -9,6 +10,8 @@ export interface Environment {
     ACCOUNT: string,
     OPEN_AI_API_KEY: string,
     OPEN_AI_API_URL: string,
+    BUCKET_NAME: string,
+    DATA_CSV: string
 }
 
 const envs = {
@@ -16,8 +19,10 @@ const envs = {
     DOMAIN_NAME: process.env.DOMAIN_NAME || 'http://localhost:3000',
     REGION: process.env.REGION || 'eu-west-1',
     ACCOUNT: process.env.ACCOUNT || '',
+    BUCKET_NAME: process.env.BUCKET_NAME || '',
     OPEN_AI_API_KEY: process.env.OPEN_AI_API_KEY || '',
     OPEN_AI_API_URL: process.env.OPEN_AI_API_URL || '',
+    DATA_CSV: process.env.DATA_CSV || ''
 }
 
 export default envs;

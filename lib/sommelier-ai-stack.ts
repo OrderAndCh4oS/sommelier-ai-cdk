@@ -6,12 +6,17 @@ import {AuthorizationType, CfnAuthorizer, LambdaIntegration, RestApi} from "aws-
 import {NodejsFunction} from "aws-cdk-lib/aws-lambda-nodejs";
 import {PolicyDocument, Role, ServicePrincipal} from "aws-cdk-lib/aws-iam";
 import {Environment} from "../bin/environment";
+import {Bucket, HttpMethods} from "aws-cdk-lib/aws-s3";
 
 export class SommelierAiCdkStack extends Stack {
     constructor(scope: Construct, id: string, props?: StackProps, envs?: Environment) {
         super(scope, id, props);
 
-        if (!envs) throw Error('Missing envs param')
+        if (!envs) throw Error('Missing envs param');
+
+        const bucket = new Bucket(this, 'SommelierAi_Bucket', {
+            bucketName: envs.BUCKET_NAME,
+        });
 
         const role = new Role(this, 'SommelierAi_Role', {
             roleName: 'sommelier-ai-role',
@@ -81,7 +86,9 @@ export class SommelierAiCdkStack extends Stack {
             timeout: Duration.seconds(30),
             memorySize: 2048,
             environment: {
-                OPEN_AI_API_KEY: envs.OPEN_AI_API_KEY
+                OPEN_AI_API_KEY: envs.OPEN_AI_API_KEY,
+                BUCKET_NAME: envs.BUCKET_NAME,
+                DATA_CSV: envs.DATA_CSV
             }
         });
 
@@ -96,6 +103,8 @@ export class SommelierAiCdkStack extends Stack {
 
         (recommendationsResource as CfnResource).addPropertyOverride('AuthorizationType', AuthorizationType.CUSTOM);
         (recommendationsResource as CfnResource).addPropertyOverride('AuthorizerId', {Ref: authoriserLogicalId});
+
+        bucket.grantRead(recommendationsHandler);
     }
 }
 
