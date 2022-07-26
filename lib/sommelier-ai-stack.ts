@@ -79,7 +79,7 @@ export class SommelierAiCdkStack extends Stack {
                 exclude: ['cdk.out'],
             }),
             timeout: Duration.seconds(30),
-            memorySize: 1024,
+            memorySize: 2048,
             environment: {
                 OPEN_AI_API_KEY: envs.OPEN_AI_API_KEY
             }
