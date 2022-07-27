@@ -2,11 +2,11 @@ import {CfnResource, Duration, Stack, StackProps} from 'aws-cdk-lib';
 import {Code, Function, Handler, Runtime} from 'aws-cdk-lib/aws-lambda'
 
 import {Construct} from 'constructs';
-import {AuthorizationType, CfnAuthorizer, LambdaIntegration, RestApi} from "aws-cdk-lib/aws-apigateway";
+import {AuthorizationType, CfnAuthorizer, Cors, LambdaIntegration, RestApi} from "aws-cdk-lib/aws-apigateway";
 import {NodejsFunction} from "aws-cdk-lib/aws-lambda-nodejs";
 import {PolicyDocument, Role, ServicePrincipal} from "aws-cdk-lib/aws-iam";
 import {Environment} from "../bin/environment";
-import {Bucket, HttpMethods} from "aws-cdk-lib/aws-s3";
+import {Bucket} from "aws-cdk-lib/aws-s3";
 
 export class SommelierAiCdkStack extends Stack {
     constructor(scope: Construct, id: string, props?: StackProps, envs?: Environment) {
@@ -35,13 +35,22 @@ export class SommelierAiCdkStack extends Stack {
             },
         });
 
-        const api = new RestApi(this, 'SommelierAi_Api', {});
+        const api = new RestApi(this, 'SommelierAi_Api', {
+            defaultCorsPreflightOptions: {
+                allowHeaders: Cors.DEFAULT_HEADERS,
+                allowMethods: Cors.ALL_METHODS,
+                allowOrigins: envs.DOMAIN_NAMES
+            }
+        });
 
         const authorizerHandler = new NodejsFunction(this, 'SommelierAi_CustomAuthorizer', {
             entry: 'lambda/handlers/auth0-authoriser.ts',
             environment: {
                 AUTH0_ISSUER: 'https://gpt-3-auth.eu.auth0.com/',
-                AUTH0_AUDIENCE: 'https://gpt-3-demo.com'
+                AUTH0_AUDIENCE: 'https://gpt-3-demo.com',
+                REGION: envs.REGION,
+                ACCOUNT: envs.ACCOUNT,
+
             }
         });
 

@@ -5,7 +5,7 @@ config();
 
 export interface Environment {
     STAGE: string,
-    DOMAIN_NAME: string,
+    DOMAIN_NAMES: string[],
     REGION: string,
     ACCOUNT: string,
     OPEN_AI_API_KEY: string,
@@ -16,7 +16,7 @@ export interface Environment {
 
 const envs = {
     STAGE: process.env.STAGE || 'dev',
-    DOMAIN_NAME: process.env.DOMAIN_NAME || 'http://localhost:3000',
+    DOMAIN_NAMES: process.env.DOMAIN_NAMES?.split(',') || ['http://localhost:3000'],
     REGION: process.env.REGION || 'eu-west-1',
     ACCOUNT: process.env.ACCOUNT || '',
     BUCKET_NAME: process.env.BUCKET_NAME || '',
