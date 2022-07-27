@@ -7,6 +7,7 @@ import {NodejsFunction} from "aws-cdk-lib/aws-lambda-nodejs";
 import {PolicyDocument, Role, ServicePrincipal} from "aws-cdk-lib/aws-iam";
 import {Environment} from "../bin/environment";
 import {Bucket} from "aws-cdk-lib/aws-s3";
+import {AttributeType, Table} from "aws-cdk-lib/aws-dynamodb";
 
 export class SommelierAiCdkStack extends Stack {
     constructor(scope: Construct, id: string, props?: StackProps, envs?: Environment) {
@@ -17,6 +18,38 @@ export class SommelierAiCdkStack extends Stack {
         const bucket = new Bucket(this, 'SommelierAi_Bucket', {
             bucketName: envs.BUCKET_NAME,
         });
+
+        /**
+         * pk: userId
+         * sk: wineNameSlug_shortUuid
+         * data: style, country, region, vintage, name, score, tastingNote, embedding, status
+         */
+        const wineListDb = new Table(this, 'SommelierAi_WineListTable', {
+            partitionKey: { name: 'userId', type: AttributeType.STRING },
+            sortKey: { name: 'sk', type: AttributeType.STRING}
+        });
+
+        wineListDb.addLocalSecondaryIndex({
+            indexName: 'statusKey',
+            sortKey: {name: 'status', type: AttributeType.NUMBER} // enum 1=published, 0=unpublished (other numbers could be used for draft etc.)
+        });
+
+        /**
+         * userId
+         * data: name, bio, avatar, socialLinks, website
+         */
+        const usersDb = new Table(this, 'SommelierAi_UserTable', {
+            partitionKey: { name: 'userId', type: AttributeType.STRING },
+        });
+
+        const apiKeyDb = new Table(this, 'SommelierAi_ApiKeyTable', {
+            partitionKey: { name: 'apiKey', type: AttributeType.STRING },
+        });
+
+        apiKeyDb.addGlobalSecondaryIndex({
+            indexName: 'userIdKey',
+            partitionKey: { name: 'userId', type: AttributeType.STRING },
+        })
 
         const role = new Role(this, 'SommelierAi_Role', {
             roleName: 'sommelier-ai-role',
@@ -86,19 +119,15 @@ export class SommelierAiCdkStack extends Stack {
         (resource as CfnResource).addPropertyOverride('AuthorizationType', AuthorizationType.CUSTOM);
         (resource as CfnResource).addPropertyOverride('AuthorizerId', {Ref: authoriserLogicalId});
 
-        const recommendationsHandler = new Function(this, 'SommelierAi_Recommendations', {
-            handler: Handler.FROM_IMAGE,
-            runtime: Runtime.FROM_IMAGE,
-            code: Code.fromAssetImage('images/python', {
-                exclude: ['cdk.out'],
-            }),
-            timeout: Duration.seconds(30),
-            memorySize: 2048,
+        const recommendationsHandler = new NodejsFunction(this, 'SommelierAiCustom_RecommendationsLambda', {
+            entry: 'lambda/handlers/recommendations.ts',
+            timeout: Duration.seconds(6),
+            memorySize: 1024,
             environment: {
+                OPEN_AI_API_URL: envs.OPEN_AI_API_URL,
                 OPEN_AI_API_KEY: envs.OPEN_AI_API_KEY,
-                BUCKET_NAME: envs.BUCKET_NAME,
-                DATA_CSV: envs.DATA_CSV
-            }
+                BUCKET_NAME: envs.BUCKET_NAME
+            },
         });
 
         const recommendationsRoute = api.root.addResource('recommendations').addMethod(

@@ -1,8 +1,0 @@
-openai
-numpy
-pandas
-matplotlib
-plotly
-scipy
-sklearn
-requests
