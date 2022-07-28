@@ -1,8 +1,7 @@
 import {CfnResource, Duration, Stack, StackProps} from 'aws-cdk-lib';
-import {Code, Function, Handler, Runtime} from 'aws-cdk-lib/aws-lambda'
 
 import {Construct} from 'constructs';
-import {AuthorizationType, CfnAuthorizer, Cors, LambdaIntegration, RestApi} from "aws-cdk-lib/aws-apigateway";
+import {AuthorizationType, CfnAuthorizer, Cors, LambdaIntegration, Resource, RestApi} from "aws-cdk-lib/aws-apigateway";
 import {NodejsFunction} from "aws-cdk-lib/aws-lambda-nodejs";
 import {PolicyDocument, Role, ServicePrincipal} from "aws-cdk-lib/aws-iam";
 import {Environment} from "../bin/environment";
@@ -10,6 +9,8 @@ import {Bucket} from "aws-cdk-lib/aws-s3";
 import {AttributeType, Table} from "aws-cdk-lib/aws-dynamodb";
 
 export class SommelierAiCdkStack extends Stack {
+    private authoriserLogicalId: string;
+
     constructor(scope: Construct, id: string, props?: StackProps, envs?: Environment) {
         super(scope, id, props);
 
@@ -25,8 +26,8 @@ export class SommelierAiCdkStack extends Stack {
          * data: style, country, region, vintage, name, score, tastingNote, embedding, status
          */
         const wineListDb = new Table(this, 'SommelierAi_WineListTable', {
-            partitionKey: { name: 'userId', type: AttributeType.STRING },
-            sortKey: { name: 'sk', type: AttributeType.STRING}
+            partitionKey: {name: 'userId', type: AttributeType.STRING},
+            sortKey: {name: 'sk', type: AttributeType.STRING}
         });
 
         wineListDb.addLocalSecondaryIndex({
@@ -39,16 +40,16 @@ export class SommelierAiCdkStack extends Stack {
          * data: name, bio, avatar, socialLinks, website
          */
         const usersDb = new Table(this, 'SommelierAi_UserTable', {
-            partitionKey: { name: 'userId', type: AttributeType.STRING },
+            partitionKey: {name: 'userId', type: AttributeType.STRING},
         });
 
         const apiKeyDb = new Table(this, 'SommelierAi_ApiKeyTable', {
-            partitionKey: { name: 'apiKey', type: AttributeType.STRING },
+            partitionKey: {name: 'apiKey', type: AttributeType.STRING},
         });
 
         apiKeyDb.addGlobalSecondaryIndex({
             indexName: 'userIdKey',
-            partitionKey: { name: 'userId', type: AttributeType.STRING },
+            partitionKey: {name: 'userId', type: AttributeType.STRING},
         })
 
         const role = new Role(this, 'SommelierAi_Role', {
@@ -96,32 +97,35 @@ export class SommelierAiCdkStack extends Stack {
             authorizerCredentials: role.roleArn
         });
 
-        const authoriserLogicalId = authorizer.logicalId;
+        this.authoriserLogicalId = authorizer.logicalId;
 
         const tastingNotesHandler = new NodejsFunction(this, 'SommelierAiCustom_TastingNotes', {
             entry: 'lambda/handlers/tasting-notes.ts',
-            timeout: Duration.seconds(6),
+            timeout: Duration.seconds(9),
+            memorySize: 1024,
             environment: {
                 OPEN_AI_API_URL: envs.OPEN_AI_API_URL,
                 OPEN_AI_API_KEY: envs.OPEN_AI_API_KEY
             }
         });
+        const tastingNotesResource = api.root.addResource('tasting-notes');
+        this.addAuthMethod('post', tastingNotesResource, tastingNotesHandler);
 
-        const tastingNotesRoute = api.root.addResource('tasting-notes').addMethod(
-            'post',
-            new LambdaIntegration(tastingNotesHandler),
-            {
-                authorizationType: AuthorizationType.CUSTOM,
+        const reimagineHandler = new NodejsFunction(this, 'SommelierAiCustom_Reimagine', {
+            entry: 'lambda/handlers/reimagine.ts',
+            timeout: Duration.seconds(9),
+            memorySize: 1024,
+            environment: {
+                OPEN_AI_API_URL: envs.OPEN_AI_API_URL,
+                OPEN_AI_API_KEY: envs.OPEN_AI_API_KEY
             }
-        );
-        const resource = tastingNotesRoute.node.findChild('Resource');
-
-        (resource as CfnResource).addPropertyOverride('AuthorizationType', AuthorizationType.CUSTOM);
-        (resource as CfnResource).addPropertyOverride('AuthorizerId', {Ref: authoriserLogicalId});
+        });
+        const reimagineResource = api.root.addResource('reimagine');
+        this.addAuthMethod('post', reimagineResource, reimagineHandler);
 
         const recommendationsHandler = new NodejsFunction(this, 'SommelierAiCustom_RecommendationsLambda', {
             entry: 'lambda/handlers/recommendations.ts',
-            timeout: Duration.seconds(6),
+            timeout: Duration.seconds(9),
             memorySize: 1024,
             environment: {
                 OPEN_AI_API_URL: envs.OPEN_AI_API_URL,
@@ -129,20 +133,24 @@ export class SommelierAiCdkStack extends Stack {
                 BUCKET_NAME: envs.BUCKET_NAME
             },
         });
+        const recommendationsResource = api.root.addResource('recommendations');
+        this.addAuthMethod('post', recommendationsResource, recommendationsHandler);
+        bucket.grantRead(recommendationsHandler);
 
-        const recommendationsRoute = api.root.addResource('recommendations').addMethod(
-            'post',
-            new LambdaIntegration(recommendationsHandler),
+    }
+
+    private addAuthMethod(method: string, resource: Resource, reimagineHandler: NodejsFunction) {
+        const route = resource.addMethod(
+            method,
+            new LambdaIntegration(reimagineHandler),
             {
                 authorizationType: AuthorizationType.CUSTOM,
             }
         );
-        const recommendationsResource = recommendationsRoute.node.findChild('Resource');
+        const childResource = route.node.findChild('Resource');
 
-        (recommendationsResource as CfnResource).addPropertyOverride('AuthorizationType', AuthorizationType.CUSTOM);
-        (recommendationsResource as CfnResource).addPropertyOverride('AuthorizerId', {Ref: authoriserLogicalId});
-
-        bucket.grantRead(recommendationsHandler);
+        (childResource as CfnResource).addPropertyOverride('AuthorizationType', AuthorizationType.CUSTOM);
+        (childResource as CfnResource).addPropertyOverride('AuthorizerId', {Ref: this.authoriserLogicalId});
     }
 }
 

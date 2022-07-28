@@ -1,0 +1,19 @@
+Imagine you are a wine connoisseur write TASTING NOTES for a <<STYLE>> wine from the <<REGION>> region in a maximum of 64 words
+
+TASTING NOTES:
+
+###
+
+Imagine you are a wine connoisseur, REIMAGINE the flavours and sensations of the following TASTING NOTES for a <<STYLE>> wine from the <<REGION>> region
+
+TASTING NOTES:  This deep red wine has a wide dark purple rim and features blackberries and blueberries on the nose. It is tightly wound up on the palate, with blackcurrants, hot stones, and forest-floor mushrooms. This rare treat Bordeaux is beautiful and deserves to be paired with something sophisticated like an armagnac or aged bourbon.
+
+REIMAGINE:
+
+###
+
+REIMAGINE AND EMBELLISH the following TASTING NOTE using a variety of different words
+
+TASTING NOTE: This ersatz dry riesling has scintillating citrus aromas and flavours of green apples, peaches, apricots and lime juice. It is a wacky creature that turns normal fruit into fantasy fruit!
+
+REIMAGINE AND EMBELLISH:

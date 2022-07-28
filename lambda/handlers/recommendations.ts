@@ -62,12 +62,12 @@ const cosineSimilarity = (a: number[], b: number[]) => {
     return p / (Math.sqrt(mA) * Math.sqrt(mB));
 };
 
-const setBestDistances = (
+const populateBestMatches = (
     embeddingA: number[],
     embeddingB: number[],
     closest: { value: number; index: number }[],
     n: number,
-    index: number
+    i: number
 ) => {
     const similarity = cosineSimilarity(embeddingA, embeddingB);
     const min = Math.min(...closest.map(x => x.value));
@@ -77,7 +77,7 @@ const setBestDistances = (
             const index = closest.findIndex(x => x.value === min);
             if (index !== -1) closest.splice(index, 1);
         }
-        closest.push({value: similarity, index});
+        closest.push({value: similarity, index: i});
     }
 };
 
@@ -139,17 +139,18 @@ export const handler: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = asy
 
         const n = 3;
 
-        const nMaxRecommend: { value: number, index: number }[] = [];
-        const nMaxSearch: { value: number, index: number }[] = [];
+        const bestMatchRecommend: { value: number, index: number }[] = [];
+        const bestMatchSearch: { value: number, index: number }[] = [];
 
         for (let i = 0; i < data.length; i++) {
             const row = data[i];
             if (!row?.curie_search || !row.curie_similarity) break;
-            setBestDistances(row.curie_similarity, similarityEmbedding, nMaxRecommend, n, i);
-            setBestDistances(row.curie_search, searchEmbedding, nMaxSearch, n, i);
+
+            populateBestMatches(row.curie_similarity, similarityEmbedding, bestMatchRecommend, n, i);
+            populateBestMatches(row.curie_search, searchEmbedding, bestMatchSearch, n, i);
         }
 
-        if (nMaxRecommend.length < n || nMaxSearch.length < n) {
+        if (bestMatchRecommend.length < n || bestMatchSearch.length < n) {
             return {
                 statusCode: 500,
                 headers: {'Content-Type': 'application/json'},
@@ -158,8 +159,8 @@ export const handler: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = asy
         }
 
         const result = {
-            search: nMaxSearch.map(x => data![x.index]['0']),
-            recommend: nMaxRecommend.map(x => data![x.index]['0']),
+            search: bestMatchSearch.map(x => data![x.index]['0']),
+            recommend: bestMatchRecommend.map(x => data![x.index]['0']),
         }
 
         return {
