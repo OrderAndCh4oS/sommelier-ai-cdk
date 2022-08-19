@@ -1,5 +1,6 @@
 import axios from "axios";
 import {APIGatewayProxyEvent, APIGatewayProxyResult, Handler} from "aws-lambda";
+import jsonResponse from "../utilities/json-response";
 
 if (!process.env.OPEN_AI_API_URL) throw new Error('Missing OPEN_AI_API_URL');
 if (!process.env.OPEN_AI_API_KEY) throw new Error('Missing OPEN_AI_API_KEY');
@@ -7,28 +8,27 @@ if (!process.env.OPEN_AI_API_KEY) throw new Error('Missing OPEN_AI_API_KEY');
 const OPEN_AI_API_URL = process.env.OPEN_AI_API_URL;
 const OPEN_AI_API_KEY = process.env.OPEN_AI_API_KEY;
 
+const getPrompt = (tastingNotes: string) => `REIMAGINE AND EMBELLISH the following TASTING NOTE using creative language
+
+TASTING NOTE: ${tastingNotes.trim()}
+
+REIMAGINE AND EMBELLISH:`;
+
 export const handler: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = async (event) => {
     console.log(event.body);
 
-    const body = JSON.parse(event?.body || '') as {
-        prompt?: string
-    };
-
-    const prompt = body.prompt
-    if (!prompt) return {
-        statusCode: 400,
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({error: 'MISSING_PROMPT'})
-    };
+    const body = JSON.parse(event?.body || '') as {tastingNotes?: string};
+    const tastingNotes = body.tastingNotes;
+    if (!tastingNotes) return jsonResponse({error: 'MISSING_TASTING_NOTES'}, 400);
 
     try {
         const response = await axios.post(
             OPEN_AI_API_URL + '/completions',
             JSON.stringify({
-                model: "davinci:ft-orderandchaos-2022-07-24-14-52-09",
-                prompt,
+                model: "text-davinci-002",
+                prompt: getPrompt(tastingNotes),
                 temperature: 0.9,
-                max_tokens: 70,
+                max_tokens: 128,
                 top_p: 1,
                 frequency_penalty: 1.75,
                 presence_penalty: 0,
@@ -43,21 +43,10 @@ export const handler: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = asy
         );
 
         return response.status === 200
-            ? {
-                statusCode: 200,
-                headers: {"Content-Type": "application/json"},
-                body: JSON.stringify(response.data)
-            }
-            : {
-                statusCode: 500,
-                headers: {"Content-Type": "application/json"},
-                body: JSON.stringify({error: 'REQUEST_ERROR'})
-            };
-    } catch {
-        return {
-            statusCode: 500,
-            headers: {"Content-Type": "application/json"},
-            body: JSON.stringify({error: 'REQUEST_FAILURE'})
-        };
+            ? jsonResponse(response.data)
+            : jsonResponse({error: 'REQUEST_ERROR'}, 500);
+    } catch (e) {
+        console.log(e)
+        return jsonResponse({error: 'REQUEST_FAILURE'}, 500);
     }
 };

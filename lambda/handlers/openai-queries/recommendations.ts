@@ -3,6 +3,7 @@ import {APIGatewayProxyEvent, APIGatewayProxyResult, Handler} from 'aws-lambda';
 import {parse} from 'papaparse';
 
 import {GetObjectCommand, S3Client} from "@aws-sdk/client-s3"
+import jsonResponse from "../utilities/json-response";
 
 if (!process.env.OPEN_AI_API_URL) throw new Error('Missing OPEN_AI_API_URL');
 if (!process.env.OPEN_AI_API_KEY) throw new Error('Missing OPEN_AI_API_KEY');
@@ -86,11 +87,7 @@ export const handler: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = asy
         if (!data) {
             const embeddingsObject = await client.send(command);
             if (!embeddingsObject?.Body) {
-                return {
-                    statusCode: 500,
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({error: 'DATA_REQUEST_ERROR'})
-                }
+                return jsonResponse({error: 'DATA_REQUEST_ERROR'}, 500);
             }
             const embeddingsCsv = await streamToString(embeddingsObject.Body);
             data = (parse<CsvData>(embeddingsCsv, {
@@ -99,19 +96,12 @@ export const handler: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = asy
                     if (column === '0') return value;
                     return JSON.parse(value);
                 }
-            }))?.data;
+            }))?.data || null;
         }
 
-        const body = JSON.parse(event?.body || '') as {
-            query?: string
-        };
-
+        const body = JSON.parse(event?.body || '') as {query?: string};
         const query = body.query
-        if (!query) return {
-            statusCode: 400,
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({error: 'MISSING_PROMPT'})
-        };
+        if (!query) return jsonResponse({error: 'MISSING_QUERY'}, 400);
 
         const response = await Promise.all([
             getEmbeddings(query, 'text-similarity-curie-001'),
@@ -119,22 +109,15 @@ export const handler: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = asy
         ]);
 
         if (response[0].status !== 200 || response[1].status !== 200) {
-            return {
-                statusCode: 500,
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({error: 'AI_REQUEST_ERROR'})
-            }
+            return jsonResponse({error: 'AI_REQUEST_ERROR'}, 500)
+
         }
 
         const similarityEmbedding: number[] = response[0].data?.data?.[0].embedding;
         const searchEmbedding: number[] = response[1].data?.data?.[0].embedding;
 
         if (!similarityEmbedding || !searchEmbedding) {
-            return {
-                statusCode: 500,
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({error: 'AI_REQUEST_ERROR'})
-            }
+            return jsonResponse({error: 'AI_SIMILARITY_ERROR'}, 500)
         }
 
         const n = 3;
@@ -151,11 +134,7 @@ export const handler: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = asy
         }
 
         if (bestMatchRecommend.length < n || bestMatchSearch.length < n) {
-            return {
-                statusCode: 500,
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({error: 'FAILED_TO_RETRIEVE_N_RESULTS'})
-            }
+            return jsonResponse({error: 'FAILED_TO_RETRIEVE_N_RESULTS'}, 500)
         }
 
         const result = {
@@ -163,17 +142,9 @@ export const handler: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = asy
             recommend: bestMatchRecommend.map(x => data![x.index]['0']),
         }
 
-        return {
-            statusCode: 200,
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify(result)
-        }
+        return jsonResponse(result)
     } catch (e) {
         console.log(e)
-        return {
-            statusCode: 500,
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({error: 'REQUEST_FAILURE'})
-        };
+        return jsonResponse({error: 'REQUEST_FAILURE'}, 500);
     }
 };

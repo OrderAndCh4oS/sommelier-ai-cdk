@@ -1,0 +1,50 @@
+POST https://ao2jyzs9o3.execute-api.eu-west-1.amazonaws.com/prod/wine-list
+Content-Type: application/json
+Authorization: Bearer {{apiKey}}
+
+{
+  "userId": "xxx",
+  "name": "A Wine",
+  "style": "red",
+  "country": "France",
+  "region": "Burgundy",
+  "vintage": 2016,
+  "score": 98,
+  "tastingNote": "Nice wine"
+}
+
+###
+
+PUT https://ao2jyzs9o3.execute-api.eu-west-1.amazonaws.com/prod/wine-list/xxx/A-Wine+F6qPZ5KCG4ZpqRO0GBvQR
+Content-Type: application/json
+Authorization: Bearer {{apiKey}}
+
+{
+  "userId": "xxx",
+  "name": "A Nice Wine",
+  "style": "red",
+  "country": "France",
+  "region": "Burgundy",
+  "vintage": 2016,
+  "score": 98,
+  "tastingNote": "Nice wine"
+}
+
+###
+
+DELETE https://ao2jyzs9o3.execute-api.eu-west-1.amazonaws.com/prod/wine-list/xxx/A-Wine+F6qPZ5KCG4ZpqRO0GBvQR
+Authorization: Bearer {{apiKey}}
+
+###
+
+GET https://ao2jyzs9o3.execute-api.eu-west-1.amazonaws.com/prod/wine-list/xxx/A-Wine#TfDvd51MYayaYlQq_Vvwh
+Content-Type: application/json
+Authorization: Bearer {{apiKey}}
+
+###
+
+GET https://ao2jyzs9o3.execute-api.eu-west-1.amazonaws.com/prod/wine-list/xxx
+Content-Type: application/json
+Authorization: Bearer {{apiKey}}
+
+###

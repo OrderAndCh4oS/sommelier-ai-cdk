@@ -1,0 +1,30 @@
+POST https://ao2jyzs9o3.execute-api.eu-west-1.amazonaws.com/prod/tasting-notes
+Content-Type: application/json
+Authorization: Bearer {{apiKey}}
+
+{
+  "prompt": "nice wine"
+}
+
+###
+
+POST https://ao2jyzs9o3.execute-api.eu-west-1.amazonaws.com/prod/reimagine
+Content-Type: application/json
+Authorization: Bearer {{apiKey}}
+
+{
+  "tastingNotes": "Sweet honey bliss, ambrosia, golden peaches and apricots, then an endless run of heavenly-sweet notes right through the finish. A vertical tasting of this recently shuttered château’s greatest years. From biodynamically treated vines with Demeter certification. Drinkable now, but best from 2023 onwards. Only 3,000 bottles produced."
+}
+
+###
+
+POST https://ao2jyzs9o3.execute-api.eu-west-1.amazonaws.com/prod/recommendations
+Content-Type: application/json
+Authorization: Bearer {{apiKey}}
+
+{
+  "query": "Champagne Rosé"
+}
+
+###
+

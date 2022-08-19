@@ -1,4 +1,4 @@
-import authenticate from "./utilities/jwt-rsa-authoriser";
+import authenticate from "./jwt-rsa-authoriser";
 
 let data;
 
