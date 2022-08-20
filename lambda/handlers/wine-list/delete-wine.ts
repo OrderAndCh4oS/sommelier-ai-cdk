@@ -14,7 +14,7 @@ export const handler: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = asy
         const command = new DeleteCommand({
             TableName,
             Key: {
-                userId,
+                userId: decodeURI(userId),
                 sk
             },
         });

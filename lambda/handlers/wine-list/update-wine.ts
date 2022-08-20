@@ -34,7 +34,7 @@ export const handler: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = asy
         const command = new GetCommand({
             TableName,
             Key: {
-                userId,
+                userId: decodeURI(userId),
                 sk
             }
         });
@@ -55,8 +55,9 @@ export const handler: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = asy
         const params: PutCommandInput = {
             TableName,
             Item: {
-                userId,
-                sk,
+                ...response.Item,
+                userId: body.userId,
+                sk: body.sk, // Todo: should this use body or path param?
                 name: body.name,
                 style: body.style,
                 country: body.country,
@@ -69,7 +70,6 @@ export const handler: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = asy
                 detailPrompt: body.detailPrompt,
                 starterText: body.starterText,
                 updatedAt: (new Date()).toISOString(),
-                createdAt: response?.Item.createdAt
             },
         };
         console.log('params', params)

@@ -18,7 +18,7 @@ export const handler: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = asy
                 '#userId': 'userId'
             },
             ExpressionAttributeValues: {
-                ':userId': userId
+                ':userId': decodeURI(userId)
             }
         });
         const response = await docClient.send(command);

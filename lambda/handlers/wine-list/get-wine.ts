@@ -14,7 +14,7 @@ export const handler: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = asy
         const command = new GetCommand({
             TableName,
             Key: {
-                userId,
+                userId: decodeURI(userId),
                 sk
             }
         });
