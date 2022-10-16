@@ -99,8 +99,8 @@ export class SommelierAiCdkStack extends Stack {
 
         this.authoriserLogicalId = authorizer.logicalId;
 
-        const tastingNotesHandler = new NodejsFunction(this, 'SommelierAi_TastingNotes', {
-            entry: 'lambda/handlers/openai-queries/tasting-notes.ts',
+        const completionHandler = new NodejsFunction(this, 'SommelierAi_TastingNotes', {
+            entry: 'lambda/handlers/openai-queries/completion.ts',
             timeout: Duration.seconds(9),
             memorySize: 1024,
             environment: {
@@ -108,11 +108,11 @@ export class SommelierAiCdkStack extends Stack {
                 OPEN_AI_API_KEY: envs.OPEN_AI_API_KEY
             }
         });
-        const tastingNotesResource = api.root.addResource('tasting-notes');
-        this.addAuthMethod('post', tastingNotesResource, tastingNotesHandler);
+        const completionResource = api.root.addResource('completion');
+        this.addAuthMethod('post', completionResource, completionHandler);
 
-        const reimagineHandler = new NodejsFunction(this, 'SommelierAi_Reimagine', {
-            entry: 'lambda/handlers/openai-queries/reimagine.ts',
+        const editHandler = new NodejsFunction(this, 'SommelierAi_Reimagine', {
+            entry: 'lambda/handlers/openai-queries/edit.ts',
             timeout: Duration.seconds(9),
             memorySize: 1024,
             environment: {
@@ -120,8 +120,8 @@ export class SommelierAiCdkStack extends Stack {
                 OPEN_AI_API_KEY: envs.OPEN_AI_API_KEY
             }
         });
-        const reimagineResource = api.root.addResource('reimagine');
-        this.addAuthMethod('post', reimagineResource, reimagineHandler);
+        const editResource = api.root.addResource('edit');
+        this.addAuthMethod('post', editResource, editHandler);
 
         const recommendationsHandler = new NodejsFunction(this, 'SommelierAi_RecommendationsLambda', {
             entry: 'lambda/handlers/openai-queries/recommendations.ts',
@@ -207,10 +207,10 @@ export class SommelierAiCdkStack extends Stack {
         wineListDb.grantReadData(getWineListHandler);
     }
 
-    private addAuthMethod(method: string, resource: Resource, reimagineHandler: NodejsFunction) {
+    private addAuthMethod(method: string, resource: Resource, editHandler: NodejsFunction) {
         const route = resource.addMethod(
             method,
-            new LambdaIntegration(reimagineHandler),
+            new LambdaIntegration(editHandler),
             {
                 authorizationType: AuthorizationType.CUSTOM,
             }

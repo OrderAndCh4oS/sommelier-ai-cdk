@@ -8,25 +8,19 @@ if (!process.env.OPEN_AI_API_KEY) throw new Error('Missing OPEN_AI_API_KEY');
 const OPEN_AI_API_URL = process.env.OPEN_AI_API_URL;
 const OPEN_AI_API_KEY = process.env.OPEN_AI_API_KEY;
 
-const getPrompt = (tastingNotes: string) => `REIMAGINE AND EMBELLISH the following TASTING NOTE using creative language
-
-TASTING NOTE: ${tastingNotes.trim()}
-
-REIMAGINE AND EMBELLISH:`;
-
 export const handler: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = async (event) => {
     console.log(event.body);
 
-    const body = JSON.parse(event?.body || '') as {tastingNotes?: string};
-    const tastingNotes = body.tastingNotes;
-    if (!tastingNotes) return jsonResponse({error: 'MISSING_TASTING_NOTES'}, 400);
+    const body = JSON.parse(event?.body || '') as {prompt?: string};
+    const prompt = body.prompt;
+    if (!prompt) return jsonResponse({error: 'MISSING_PROMPT'}, 400);
 
     try {
         const response = await axios.post(
             OPEN_AI_API_URL + '/completions',
             JSON.stringify({
                 model: "text-davinci-002",
-                prompt: getPrompt(tastingNotes),
+                prompt,
                 temperature: 0.9,
                 max_tokens: 128,
                 top_p: 1,
