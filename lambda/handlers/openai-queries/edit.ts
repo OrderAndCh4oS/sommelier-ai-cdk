@@ -11,21 +11,20 @@ const OPEN_AI_API_KEY = process.env.OPEN_AI_API_KEY;
 export const handler: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = async (event) => {
     console.log(event.body);
 
-    const body = JSON.parse(event?.body || '') as {prompt?: string};
-    const prompt = body.prompt;
-    if (!prompt) return jsonResponse({error: 'MISSING_PROMPT'}, 400);
+    const body = JSON.parse(event?.body || '') as {input?: string, instruction?: string};
+    const input = body.input;
+    const instruction = body.instruction;
+    if (!input) return jsonResponse({error: 'MISSING_PROMPT'}, 400);
 
     try {
         const response = await axios.post(
-            OPEN_AI_API_URL + '/completions',
+            OPEN_AI_API_URL + '/edits',
             JSON.stringify({
-                model: "text-davinci-002",
-                prompt,
+                model: "text-davinci-edit-001",
+                input,
+                instruction,
                 temperature: 0.9,
-                max_tokens: 128,
                 top_p: 1,
-                frequency_penalty: 1.75,
-                presence_penalty: 0,
                 n: 3
             }),
             {

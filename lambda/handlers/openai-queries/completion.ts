@@ -8,6 +8,13 @@ if (!process.env.OPEN_AI_API_KEY) throw new Error('Missing OPEN_AI_API_KEY');
 const OPEN_AI_API_URL = process.env.OPEN_AI_API_URL;
 const OPEN_AI_API_KEY = process.env.OPEN_AI_API_KEY;
 
+const models = [
+    'davinci:ft-orderandchaos-2022-07-24-14-52-09',
+    'davinci:ft-orderandchaos-2022-10-16-11-47-34',
+    'davinci:ft-orderandchaos-2022-10-16-13-55-45'
+]
+
+// Note: openai api fine_tunes.follow -i ft-DjI1nF14GecOdUtsxJyDfzum
 export const handler: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = async (event) => {
     console.log(event.body);
 
@@ -22,11 +29,11 @@ export const handler: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = asy
                 model: "davinci:ft-orderandchaos-2022-07-24-14-52-09",
                 prompt,
                 temperature: 0.9,
-                max_tokens: 70,
+                max_tokens: 80,
                 top_p: 1,
                 frequency_penalty: 1.75,
                 presence_penalty: 0,
-                n: 3
+                n: 5
             }),
             {
                 headers: {
