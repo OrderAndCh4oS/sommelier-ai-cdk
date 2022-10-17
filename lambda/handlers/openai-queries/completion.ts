@@ -26,14 +26,14 @@ export const handler: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = asy
         const response = await axios.post(
             OPEN_AI_API_URL + '/completions',
             JSON.stringify({
-                model: "davinci:ft-orderandchaos-2022-07-24-14-52-09",
+                model: "davinci:ft-orderandchaos-2022-10-16-15-57-43",
                 prompt,
                 temperature: 0.9,
                 max_tokens: 80,
                 top_p: 1,
-                frequency_penalty: 1.75,
+                frequency_penalty: 1,
                 presence_penalty: 0,
-                n: 5
+                n: 3
             }),
             {
                 headers: {

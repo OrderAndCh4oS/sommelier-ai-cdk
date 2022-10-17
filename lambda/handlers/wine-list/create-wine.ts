@@ -36,7 +36,7 @@ export const handler: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = asy
         const {error} = schema.validate(body);
         if (error) return jsonResponse(error, 400);
         // Todo: get embedding for tasting notes
-        const sk = slugify(body.name, {lower: true, trim: true}) + '+' + nanoid();
+        const sk = nanoid();
         const params: PutCommandInput = {
             TableName,
             Item: {

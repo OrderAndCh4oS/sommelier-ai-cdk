@@ -35,7 +35,7 @@ export const handler: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = asy
             TableName,
             Key: {
                 userId: decodeURI(userId),
-                sk
+                sk: decodeURI(sk)
             }
         });
 

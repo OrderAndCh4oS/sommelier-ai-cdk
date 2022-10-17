@@ -99,7 +99,7 @@ export class SommelierAiCdkStack extends Stack {
 
         this.authoriserLogicalId = authorizer.logicalId;
 
-        const completionHandler = new NodejsFunction(this, 'SommelierAi_TastingNotes', {
+        const completionHandler = new NodejsFunction(this, 'SommelierAi_OpenAiTastingNotesLambda', {
             entry: 'lambda/handlers/openai-queries/completion.ts',
             timeout: Duration.seconds(9),
             memorySize: 1024,
@@ -111,9 +111,9 @@ export class SommelierAiCdkStack extends Stack {
         const completionResource = api.root.addResource('completion');
         this.addAuthMethod('post', completionResource, completionHandler);
 
-        const editHandler = new NodejsFunction(this, 'SommelierAi_Reimagine', {
+        const editHandler = new NodejsFunction(this, 'SommelierAi_OpenAiEditLambda', {
             entry: 'lambda/handlers/openai-queries/edit.ts',
-            timeout: Duration.seconds(9),
+            timeout: Duration.seconds(12),
             memorySize: 1024,
             environment: {
                 OPEN_AI_API_URL: envs.OPEN_AI_API_URL,
@@ -123,9 +123,9 @@ export class SommelierAiCdkStack extends Stack {
         const editResource = api.root.addResource('edit');
         this.addAuthMethod('post', editResource, editHandler);
 
-        const recommendationsHandler = new NodejsFunction(this, 'SommelierAi_RecommendationsLambda', {
+        const recommendationsHandler = new NodejsFunction(this, 'SommelierAi_OpenAiRecommendationsLambda', {
             entry: 'lambda/handlers/openai-queries/recommendations.ts',
-            timeout: Duration.seconds(9),
+            timeout: Duration.seconds(12),
             memorySize: 1024,
             environment: {
                 OPEN_AI_API_URL: envs.OPEN_AI_API_URL,
@@ -137,7 +137,7 @@ export class SommelierAiCdkStack extends Stack {
         this.addAuthMethod('post', recommendationsResource, recommendationsHandler);
         bucket.grantRead(recommendationsHandler);
 
-        const createWineHandler = new NodejsFunction(this, 'SommelierAi_CreateWine', {
+        const createWineHandler = new NodejsFunction(this, 'SommelierAi_CreateWineLambda', {
             entry: 'lambda/handlers/wine-list/create-wine.ts',
             timeout: Duration.seconds(9),
             memorySize: 512,
@@ -149,7 +149,7 @@ export class SommelierAiCdkStack extends Stack {
             }
         });
 
-        const updateWineHandler = new NodejsFunction(this, 'SommelierAi_UpdateWine', {
+        const updateWineHandler = new NodejsFunction(this, 'SommelierAi_UpdateWineLambda', {
             entry: 'lambda/handlers/wine-list/update-wine.ts',
             timeout: Duration.seconds(9),
             memorySize: 512,
@@ -161,7 +161,7 @@ export class SommelierAiCdkStack extends Stack {
             }
         });
 
-        const deleteWineHandler = new NodejsFunction(this, 'SommelierAi_DeleteWine', {
+        const deleteWineHandler = new NodejsFunction(this, 'SommelierAi_DeleteWineLambda', {
             entry: 'lambda/handlers/wine-list/delete-wine.ts',
             timeout: Duration.seconds(3),
             memorySize: 256,
@@ -171,7 +171,7 @@ export class SommelierAiCdkStack extends Stack {
             }
         });
 
-        const getWineHandler = new NodejsFunction(this, 'SommelierAi_GetWine', {
+        const getWineHandler = new NodejsFunction(this, 'SommelierAi_GetWineLambda', {
             entry: 'lambda/handlers/wine-list/get-wine.ts',
             timeout: Duration.seconds(3),
             memorySize: 256,
@@ -181,7 +181,7 @@ export class SommelierAiCdkStack extends Stack {
             }
         });
 
-        const getWineListHandler = new NodejsFunction(this, 'SommelierAi_GetWineList', {
+        const getWineListHandler = new NodejsFunction(this, 'SommelierAi_GetWineListLambda', {
             entry: 'lambda/handlers/wine-list/get-wine-list.ts',
             timeout: Duration.seconds(3),
             memorySize: 256,
