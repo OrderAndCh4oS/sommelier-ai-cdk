@@ -22,8 +22,10 @@ export class SommelierAiCdkStack extends Stack {
 
         /**
          * pk: userId
-         * sk: wineNameSlug_shortUuid
-         * data: style, country, region, vintage, name, score, tastingNote, embedding, status
+         * wineSk: wineNameSlug_shortUuid
+         * tastingNoteSk: wineNameSk_shortUuid
+         * wineData: style, country, region, vintage, name, score, tastingNote, embedding, status
+         * tastingNoteData: text, searchVector, similarityVector, isActive, createdAt, updatedAt
          */
         const wineListDb = new Table(this, 'SommelierAi_WineListDb', {
             partitionKey: {name: 'userId', type: AttributeType.STRING},
@@ -35,22 +37,10 @@ export class SommelierAiCdkStack extends Stack {
             sortKey: {name: 'status', type: AttributeType.NUMBER} // enum 1=published, 0=unpublished (other numbers could be used for draft etc.)
         });
 
-        // /**
-        //  * userId
-        //  * data: name, bio, avatar, socialLinks, website
-        //  */
-        // const usersDb = new Table(this, 'SommelierAi_UserTable', {
-        //     partitionKey: {name: 'userId', type: AttributeType.STRING},
-        // });
-
-        // const apiKeyDb = new Table(this, 'SommelierAi_ApiKeyTable', {
-        //     partitionKey: {name: 'apiKey', type: AttributeType.STRING},
-        // });
-
-        // apiKeyDb.addGlobalSecondaryIndex({
-        //     indexName: 'userIdKey',
-        //     partitionKey: {name: 'userId', type: AttributeType.STRING},
-        // })
+        wineListDb.addLocalSecondaryIndex({
+            indexName: 'tastingNote',
+            sortKey: {name: 'tastingNoteSk', type: AttributeType.STRING} // enum 1=published, 0=unpublished (other numbers could be used for draft etc.)
+        });
 
         const role = new Role(this, 'SommelierAi_Role', {
             roleName: 'sommelier-ai-role',
@@ -101,8 +91,8 @@ export class SommelierAiCdkStack extends Stack {
 
         const completionHandler = new NodejsFunction(this, 'SommelierAi_OpenAiTastingNotesLambda', {
             entry: 'lambda/handlers/openai-queries/completion.ts',
-            timeout: Duration.seconds(9),
-            memorySize: 1024,
+            timeout: Duration.seconds(12),
+            memorySize: 512,
             environment: {
                 OPEN_AI_API_URL: envs.OPEN_AI_API_URL,
                 OPEN_AI_API_KEY: envs.OPEN_AI_API_KEY
@@ -114,7 +104,7 @@ export class SommelierAiCdkStack extends Stack {
         const editHandler = new NodejsFunction(this, 'SommelierAi_OpenAiEditLambda', {
             entry: 'lambda/handlers/openai-queries/edit.ts',
             timeout: Duration.seconds(12),
-            memorySize: 1024,
+            memorySize: 512,
             environment: {
                 OPEN_AI_API_URL: envs.OPEN_AI_API_URL,
                 OPEN_AI_API_KEY: envs.OPEN_AI_API_KEY
@@ -126,7 +116,7 @@ export class SommelierAiCdkStack extends Stack {
         const recommendationsHandler = new NodejsFunction(this, 'SommelierAi_OpenAiRecommendationsLambda', {
             entry: 'lambda/handlers/openai-queries/recommendations.ts',
             timeout: Duration.seconds(12),
-            memorySize: 1024,
+            memorySize: 2048,
             environment: {
                 OPEN_AI_API_URL: envs.OPEN_AI_API_URL,
                 OPEN_AI_API_KEY: envs.OPEN_AI_API_KEY,
@@ -139,11 +129,9 @@ export class SommelierAiCdkStack extends Stack {
 
         const createWineHandler = new NodejsFunction(this, 'SommelierAi_CreateWineLambda', {
             entry: 'lambda/handlers/wine-list/create-wine.ts',
-            timeout: Duration.seconds(9),
-            memorySize: 512,
+            timeout: Duration.seconds(3),
+            memorySize: 256,
             environment: {
-                OPEN_AI_API_URL: envs.OPEN_AI_API_URL,
-                OPEN_AI_API_KEY: envs.OPEN_AI_API_KEY,
                 TABLE_NAME: wineListDb.tableName,
                 REGION: envs.REGION
             }
@@ -151,11 +139,9 @@ export class SommelierAiCdkStack extends Stack {
 
         const updateWineHandler = new NodejsFunction(this, 'SommelierAi_UpdateWineLambda', {
             entry: 'lambda/handlers/wine-list/update-wine.ts',
-            timeout: Duration.seconds(9),
-            memorySize: 512,
+            timeout: Duration.seconds(3),
+            memorySize: 256,
             environment: {
-                OPEN_AI_API_URL: envs.OPEN_AI_API_URL,
-                OPEN_AI_API_KEY: envs.OPEN_AI_API_KEY,
                 TABLE_NAME: wineListDb.tableName,
                 REGION: envs.REGION
             }
@@ -191,6 +177,28 @@ export class SommelierAiCdkStack extends Stack {
             }
         });
 
+        const addTastingNoteHandler = new NodejsFunction(this, 'SommelierAi_AddTastingNoteLambda', {
+            entry: 'lambda/handlers/wine-list/add-tasting-note.ts',
+            timeout: Duration.seconds(3),
+            memorySize: 256,
+            environment: {
+                TABLE_NAME: wineListDb.tableName,
+                REGION: envs.REGION,
+                OPEN_AI_API_URL: envs.OPEN_AI_API_URL,
+                OPEN_AI_API_KEY: envs.OPEN_AI_API_KEY,
+            }
+        });
+
+        const selectTastingNoteHandler = new NodejsFunction(this, 'SommelierAi_SelectTastingNoteLambda', {
+            entry: 'lambda/handlers/wine-list/select-tasting-note.ts',
+            timeout: Duration.seconds(3),
+            memorySize: 256,
+            environment: {
+                TABLE_NAME: wineListDb.tableName,
+                REGION: envs.REGION,
+            }
+        });
+
         const wineListResource = api.root.addResource('wine-list');
         const wineListByUserResource = wineListResource.addResource('{userId}');
         const wineItemResource = wineListByUserResource.addResource('{sk}');
@@ -200,9 +208,17 @@ export class SommelierAiCdkStack extends Stack {
         this.addAuthMethod('put', wineItemResource, updateWineHandler);
         this.addAuthMethod('delete', wineItemResource, deleteWineHandler);
 
+        const tastingNoteResource = wineListByUserResource.addResource('tasting-note');
+        this.addAuthMethod('put', tastingNoteResource, addTastingNoteHandler);
+
+        const tastingNoteSelectResource = wineListByUserResource.addResource('tasting-note-select');
+        this.addAuthMethod('put', tastingNoteSelectResource, selectTastingNoteHandler);
+
         wineListDb.grantReadWriteData(createWineHandler);
         wineListDb.grantReadWriteData(updateWineHandler);
         wineListDb.grantReadWriteData(deleteWineHandler);
+        wineListDb.grantReadWriteData(addTastingNoteHandler);
+        wineListDb.grantReadWriteData(selectTastingNoteHandler);
         wineListDb.grantReadData(getWineHandler);
         wineListDb.grantReadData(getWineListHandler);
     }

@@ -1,16 +1,12 @@
-import axios from 'axios';
 import {APIGatewayProxyEvent, APIGatewayProxyResult, Handler} from 'aws-lambda';
 import {parse} from 'papaparse';
 
-import {GetObjectCommand, S3Client} from "@aws-sdk/client-s3"
-import jsonResponse from "../utilities/json-response";
+import {GetObjectCommand, S3Client} from '@aws-sdk/client-s3'
+import jsonResponse from '../utilities/json-response';
+import getEmbeddings from '../utilities/get-embeddings';
 
-if (!process.env.OPEN_AI_API_URL) throw new Error('Missing OPEN_AI_API_URL');
-if (!process.env.OPEN_AI_API_KEY) throw new Error('Missing OPEN_AI_API_KEY');
 if (!process.env.BUCKET_NAME) throw new Error('Missing BUCKET_NAME');
 
-const OPEN_AI_API_URL = process.env.OPEN_AI_API_URL;
-const OPEN_AI_API_KEY = process.env.OPEN_AI_API_KEY;
 const BUCKET_NAME = process.env.BUCKET_NAME;
 
 const client = new S3Client({
@@ -35,19 +31,6 @@ const streamToString = (stream: any) => new Promise<string>((resolve, reject) =>
     stream.on('error', reject);
     stream.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')));
 });
-
-async function getEmbeddings(input: string, model: string) {
-    return await axios.post(
-        OPEN_AI_API_URL + '/embeddings',
-        JSON.stringify({model, input}),
-        {
-            headers: {
-                Authorization: `Bearer ${OPEN_AI_API_KEY}`,
-                'Content-Type': 'application/json'
-            },
-        }
-    );
-}
 
 const cosineSimilarity = (a: number[], b: number[]) => {
     if (a.length !== b.length) throw new Error('Vectors are not equal');
@@ -99,26 +82,11 @@ export const handler: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = asy
             }))?.data || null;
         }
 
-        const body = JSON.parse(event?.body || '') as {query?: string};
+        const body = JSON.parse(event?.body || '') as { query?: string };
         const query = body.query
         if (!query) return jsonResponse({error: 'MISSING_QUERY'}, 400);
 
-        const response = await Promise.all([
-            getEmbeddings(query, 'text-similarity-curie-001'),
-            getEmbeddings(query, 'text-search-curie-query-001'),
-        ]);
-
-        if (response[0].status !== 200 || response[1].status !== 200) {
-            return jsonResponse({error: 'AI_REQUEST_ERROR'}, 500)
-
-        }
-
-        const similarityEmbedding: number[] = response[0].data?.data?.[0].embedding;
-        const searchEmbedding: number[] = response[1].data?.data?.[0].embedding;
-
-        if (!similarityEmbedding || !searchEmbedding) {
-            return jsonResponse({error: 'AI_SIMILARITY_ERROR'}, 500)
-        }
+        const {searchEmbedding, similarityEmbedding} = await getEmbeddings(query);
 
         const n = 3;
 

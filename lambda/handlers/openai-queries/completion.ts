@@ -1,6 +1,6 @@
-import axios from "axios";
-import {APIGatewayProxyEvent, APIGatewayProxyResult, Handler} from "aws-lambda";
-import jsonResponse from "../utilities/json-response";
+import axios from 'axios';
+import {APIGatewayProxyEvent, APIGatewayProxyResult, Handler} from 'aws-lambda';
+import jsonResponse from '../utilities/json-response';
 
 if (!process.env.OPEN_AI_API_URL) throw new Error('Missing OPEN_AI_API_URL');
 if (!process.env.OPEN_AI_API_KEY) throw new Error('Missing OPEN_AI_API_KEY');
@@ -18,7 +18,7 @@ const models = [
 export const handler: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = async (event) => {
     console.log(event.body);
 
-    const body = JSON.parse(event?.body || '') as {prompt?: string};
+    const body = JSON.parse(event?.body || '') as { prompt?: string };
     const prompt = body.prompt
     if (!prompt) return jsonResponse({error: 'MISSING_PROMPT'}, 400);
 
@@ -26,7 +26,7 @@ export const handler: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = asy
         const response = await axios.post(
             OPEN_AI_API_URL + '/completions',
             JSON.stringify({
-                model: "davinci:ft-orderandchaos-2022-10-16-15-57-43",
+                model: 'davinci:ft-orderandchaos-2022-10-16-15-57-43',
                 prompt,
                 temperature: 0.9,
                 max_tokens: 80,
@@ -38,7 +38,7 @@ export const handler: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = asy
             {
                 headers: {
                     Authorization: `Bearer ${OPEN_AI_API_KEY}`,
-                    "Content-Type": "application/json"
+                    'Content-Type': 'application/json'
                 },
             }
         );

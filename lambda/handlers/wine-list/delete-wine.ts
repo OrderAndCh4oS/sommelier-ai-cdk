@@ -1,7 +1,7 @@
-import {APIGatewayProxyEvent, APIGatewayProxyResult, Handler} from "aws-lambda";
-import jsonResponse from "../utilities/json-response";
-import getDocumentClient from "../utilities/get-document-client";
-import {DeleteCommand} from "@aws-sdk/lib-dynamodb";
+import {APIGatewayProxyEvent, APIGatewayProxyResult, Handler} from 'aws-lambda';
+import jsonResponse from '../utilities/json-response';
+import getDocumentClient from '../utilities/get-document-client';
+import {DeleteCommand} from '@aws-sdk/lib-dynamodb';
 
 if (!process.env.TABLE_NAME) throw new Error('Missing TABLE_NAME');
 const TableName = process.env.TABLE_NAME;
@@ -14,8 +14,8 @@ export const handler: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = asy
         const command = new DeleteCommand({
             TableName,
             Key: {
-                userId: decodeURI(userId),
-                sk: decodeURI(sk)
+                userId: decodeURIComponent(userId),
+                sk: decodeURIComponent(sk)
             },
         });
         await docClient.send(command);
