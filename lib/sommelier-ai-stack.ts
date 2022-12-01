@@ -211,7 +211,7 @@ export class SommelierAiCdkStack extends Stack {
         const tastingNoteResource = wineListByUserResource.addResource('tasting-note');
         this.addAuthMethod('put', tastingNoteResource, addTastingNoteHandler);
 
-        const tastingNoteSelectResource = wineListByUserResource.addResource('tasting-note-select');
+        const tastingNoteSelectResource = wineListByUserResource.addResource('select-tasting-note');
         this.addAuthMethod('put', tastingNoteSelectResource, selectTastingNoteHandler);
 
         wineListDb.grantReadWriteData(createWineHandler);

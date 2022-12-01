@@ -45,7 +45,7 @@ Authorization: Bearer {{apiKey}}
 
 ###
 
-PUT https://ao2jyzs9o3.execute-api.eu-west-1.amazonaws.com/prod/wine-list/xxx/tasting-note-select
+PUT https://ao2jyzs9o3.execute-api.eu-west-1.amazonaws.com/prod/wine-list/xxx/select-tasting-note
 Content-Type: application/json
 Authorization: Bearer {{apiKey}}
 
