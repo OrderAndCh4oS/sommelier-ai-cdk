@@ -37,7 +37,7 @@ export const handler: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = asy
             }
         }
 
-        wine.tastingNote = wine.sk ? tastingNotes[wine.sk] : null
+        wine.tastingNotes = wine.sk ? tastingNotes[wine.sk] : null
 
         return jsonResponse(wine);
     } catch (e) {
