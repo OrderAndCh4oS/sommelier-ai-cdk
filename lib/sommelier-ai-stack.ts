@@ -200,18 +200,17 @@ export class SommelierAiCdkStack extends Stack {
         });
 
         const wineListResource = api.root.addResource('wine-list');
-        const wineListByUserResource = wineListResource.addResource('{userId}');
-        const wineItemResource = wineListByUserResource.addResource('{sk}');
-        wineListByUserResource.addMethod('get', new LambdaIntegration(getWineListHandler));
-        wineItemResource.addMethod('get', new LambdaIntegration(getWineHandler));
+        const wineItemResource = wineListResource.addResource('{sk}');
+        this.addAuthMethod('get', wineListResource, getWineListHandler);
         this.addAuthMethod('post', wineListResource, createWineHandler);
+        this.addAuthMethod('get', wineItemResource, getWineHandler);
         this.addAuthMethod('put', wineItemResource, updateWineHandler);
         this.addAuthMethod('delete', wineItemResource, deleteWineHandler);
 
-        const tastingNoteResource = wineListByUserResource.addResource('tasting-note');
+        const tastingNoteResource = wineListResource.addResource('tasting-note');
         this.addAuthMethod('put', tastingNoteResource, addTastingNoteHandler);
 
-        const tastingNoteSelectResource = wineListByUserResource.addResource('select-tasting-note');
+        const tastingNoteSelectResource = wineListResource.addResource('select-tasting-note');
         this.addAuthMethod('put', tastingNoteSelectResource, selectTastingNoteHandler);
 
         wineListDb.grantReadWriteData(createWineHandler);
@@ -223,10 +222,10 @@ export class SommelierAiCdkStack extends Stack {
         wineListDb.grantReadData(getWineListHandler);
     }
 
-    private addAuthMethod(method: string, resource: Resource, editHandler: NodejsFunction) {
+    private addAuthMethod(method: string, resource: Resource, handler: NodejsFunction) {
         const route = resource.addMethod(
             method,
-            new LambdaIntegration(editHandler),
+            new LambdaIntegration(handler),
             {
                 authorizationType: AuthorizationType.CUSTOM,
             }

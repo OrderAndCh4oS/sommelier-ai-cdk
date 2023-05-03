@@ -10,7 +10,8 @@ const docClient = getDocumentClient()
 
 export const handler: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = async (event) => {
     try {
-        const {userId} = event.pathParameters as { userId: string };
+        const userId = event?.requestContext?.authorizer?.principalId;
+        if(!userId) return jsonResponse({error: 'NOT_AUTHENTICATED'}, 401);
         const command = new QueryCommand({
             TableName,
             KeyConditionExpression: '#userId = :userId',
@@ -18,7 +19,7 @@ export const handler: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = asy
                 '#userId': 'userId'
             },
             ExpressionAttributeValues: {
-                ':userId': decodeURIComponent(userId)
+                ':userId': userId
             }
         });
         const response = await docClient.send(command);

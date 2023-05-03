@@ -13,15 +13,15 @@ const docClient = getDocumentClient();
 
 // Todo: improve validation
 const schema = Joi.object({
-    userId: Joi.string().required(), // Todo: replace with organisationId later, add createdBy field for userId
     text: Joi.string().required(),
     wineSk: Joi.string().required(),
 });
 
 export const handler: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = async (event) => {
     try {
-        // Todo: userId should match current authed userId (for now, later same organisation and permissions)
         console.log(event.body);
+        const userId = event?.requestContext?.authorizer?.principalId;
+        if(!userId) return jsonResponse({error: 'NOT_AUTHENTICATED'}, 401);
         if (!event.body) return jsonResponse({error: 'MISSING_REQUEST_BODY'}, 400);
         const body = JSON.parse(event.body as string);
         const {error} = schema.validate(body);
@@ -30,7 +30,7 @@ export const handler: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = asy
         const params: PutCommandInput = {
             TableName,
             Item: {
-                userId: body.userId,
+                userId,
                 sk: `${body.wineSk}_NOTE#${nanoid()}`,
                 text: body.text,
                 searchEmbedding,

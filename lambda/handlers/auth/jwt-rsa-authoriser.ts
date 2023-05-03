@@ -11,6 +11,8 @@ if (!process.env.ACCOUNT) throw new Error('Missing ACCOUNT');
 const AUTH0_JWKS_URI = `${process.env.AUTH0_ISSUER}.well-known/jwks.json`
 
 config();
+
+
 const getPolicyDocument = (effect: any, resource: any) => {
     return {
         Version: '2012-10-17', // default version

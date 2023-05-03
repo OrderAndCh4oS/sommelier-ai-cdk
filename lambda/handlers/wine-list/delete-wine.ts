@@ -9,12 +9,15 @@ const TableName = process.env.TABLE_NAME;
 const docClient = getDocumentClient()
 
 export const handler: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = async (event) => {
+    console.log('EVENT', event)
+    const userId = event?.requestContext?.authorizer?.principalId;
+    if(!userId) return jsonResponse({error: 'NOT_AUTHENTICATED'}, 401);
     try {
-        const {userId, sk} = event.pathParameters as { userId: string, sk: string };
+        const {sk} = event.pathParameters as {sk: string };
         const command = new DeleteCommand({
             TableName,
             Key: {
-                userId: decodeURIComponent(userId),
+                userId,
                 sk: decodeURIComponent(sk)
             },
         });

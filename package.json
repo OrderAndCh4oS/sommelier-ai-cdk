@@ -8,7 +8,21 @@
     "build": "tsc",
     "watch": "tsc -w",
     "test": "jest",
-    "cdk": "cdk"
+    "cdk": "cdk",
+    "cdk:deploy": "cdk deploy",
+    "cdk:deploy:prod": "cdk deploy --require-approval never",
+    "cdk:synth": "cdk synth",
+    "cdk:bootstrap": "cdk bootstrap",
+    "cdk:doctor": "cdk doctor",
+    "cdk:destroy": "cdk destroy",
+    "release": "pnpm version patch",
+    "release-alpha": "pnpm version prepatch --preid=alpha",
+    "release:minor": "pnpm version minor",
+    "release-alpha:minor": "pnpm version preminor --preid=alpha",
+    "release:major": "pnpm version major",
+    "release-alpha:major": "pnpm version premajor --preid=alpha",
+    "preversion": "pnpm install",
+    "postversion": "git push && git push --tags"
   },
   "devDependencies": {
     "@types/jest": "^27.5.2",
