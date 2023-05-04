@@ -181,7 +181,7 @@ export class SommelierAiCdkStack extends Stack {
 
         const getWineListHandler = new NodejsFunction(this, 'SommelierAi_GetWineListLambda', {
             entry: 'lambda/handlers/wine-list/get-wine-list.ts',
-            timeout: Duration.seconds(3),
+            timeout: Duration.seconds(12),
             memorySize: 256,
             environment: {
                 TABLE_NAME: wineListDb.tableName,

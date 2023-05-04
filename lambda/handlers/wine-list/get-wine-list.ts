@@ -12,6 +12,7 @@ export const handler: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = asy
     try {
         const userId = event?.requestContext?.authorizer?.principalId;
         if(!userId) return jsonResponse({error: 'NOT_AUTHENTICATED'}, 401);
+        // Todo: improve this command look up pattern
         const command = new QueryCommand({
             TableName,
             KeyConditionExpression: '#userId = :userId',
