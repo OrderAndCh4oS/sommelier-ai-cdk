@@ -17,6 +17,7 @@ const OPEN_AI_API_KEY = process.env.OPEN_AI_API_KEY;
 // Note: openai api fine_tunes.follow -i ft-DjI1nF14GecOdUtsxJyDfzum
 export const handler: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = async (event) => {
     console.log(event.body);
+    const userId = event?.requestContext?.authorizer?.principalId;
 
     const body = JSON.parse(event?.body || '') as { prompt?: string };
     const prompt = body.prompt
@@ -33,7 +34,8 @@ export const handler: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = asy
                 top_p: 1,
                 frequency_penalty: 1,
                 presence_penalty: 0,
-                n: 3
+                n: 3,
+                user: userId
             }),
             {
                 headers: {

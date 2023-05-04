@@ -13,6 +13,8 @@ export const handler: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = asy
         const userId = event?.requestContext?.authorizer?.principalId;
         if(!userId) return jsonResponse({error: 'NOT_AUTHENTICATED'}, 401);
         const {sk} = event.pathParameters as {sk: string };
+        console.log('SK', sk)
+        console.log('SK_DECODE', decodeURIComponent(sk))
         const command = new QueryCommand({
             TableName,
             KeyConditionExpression: 'userId = :userId and begins_with(sk, :sk)',

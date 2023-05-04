@@ -101,6 +101,18 @@ export class SommelierAiCdkStack extends Stack {
         const completionResource = api.root.addResource('completion');
         this.addAuthMethod('post', completionResource, completionHandler);
 
+        const chatHandler = new NodejsFunction(this, 'SommelierAi_OpenAiChatTastingNotesLambda', {
+            entry: 'lambda/handlers/openai-queries/chat.ts',
+            timeout: Duration.seconds(29),
+            memorySize: 512,
+            environment: {
+                OPEN_AI_API_URL: envs.OPEN_AI_API_URL,
+                OPEN_AI_API_KEY: envs.OPEN_AI_API_KEY
+            }
+        });
+        const chatResource = api.root.addResource('chat');
+        this.addAuthMethod('post', chatResource, chatHandler);
+
         const editHandler = new NodejsFunction(this, 'SommelierAi_OpenAiEditLambda', {
             entry: 'lambda/handlers/openai-queries/edit.ts',
             timeout: Duration.seconds(12),

@@ -10,6 +10,7 @@ const OPEN_AI_API_KEY = process.env.OPEN_AI_API_KEY;
 
 export const handler: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = async (event) => {
     console.log(event.body);
+    const userId = event?.requestContext?.authorizer?.principalId;
 
     const body = JSON.parse(event?.body || '') as { input?: string, instruction?: string };
     const input = body.input;
@@ -25,7 +26,8 @@ export const handler: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = asy
                 instruction,
                 temperature: 0.9,
                 top_p: 1,
-                n: 3
+                n: 3,
+                user: userId
             }),
             {
                 headers: {
