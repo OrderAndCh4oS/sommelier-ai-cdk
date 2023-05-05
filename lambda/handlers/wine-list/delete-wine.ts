@@ -22,8 +22,9 @@ export const handler: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = asy
             },
         });
         await docClient.send(command);
+
         return {
-            statusCode: 200,
+            statusCode: 204,
             body: ''
         }
     } catch (e) {

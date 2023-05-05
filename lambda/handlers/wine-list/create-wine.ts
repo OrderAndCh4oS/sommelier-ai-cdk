@@ -13,12 +13,12 @@ const docClient = getDocumentClient();
 
 export const handler: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = async (event) => {
     try {
-        // Todo: userId should match current authed userId (for now, later same organisation and permissions)
-        console.log(event.body);
         const userId = event?.requestContext?.authorizer?.principalId;
         if (!userId) return jsonResponse({error: 'NOT_AUTHENTICATED'}, 401);
+
         if (!event.body) return jsonResponse({error: 'MISSING_REQUEST_BODY'}, 400);
         const body = JSON.parse(event.body as string);
+
         const {error} = wineSchema.validate(body);
         if (error) return jsonResponse(error, 400);
 
@@ -40,6 +40,7 @@ export const handler: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = asy
             },
         };
         await docClient.send(new PutCommand(params));
+
         return jsonResponse(params.Item);
     } catch (e) {
         console.log(e)

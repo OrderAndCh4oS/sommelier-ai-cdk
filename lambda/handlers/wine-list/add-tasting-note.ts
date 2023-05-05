@@ -18,15 +18,18 @@ const schema = Joi.object({
 
 export const handler: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = async (event) => {
     try {
-        console.log(event.body);
         const userId = event?.requestContext?.authorizer?.principalId;
         if (!userId) return jsonResponse({error: 'NOT_AUTHENTICATED'}, 401);
+
         if (!event.body) return jsonResponse({error: 'MISSING_REQUEST_BODY'}, 400);
         const body = JSON.parse(event.body as string);
+
         const {error} = schema.validate(body);
         if (error) return jsonResponse(error, 400);
+
         // const {searchEmbedding, similarityEmbedding} = await getEmbeddings(body.text);
         // Todo: store the embedding somewhere
+
         const params: UpdateCommandInput = {
             TableName,
             Key: {
@@ -43,8 +46,9 @@ export const handler: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = asy
             }
         };
         await docClient.send(new UpdateCommand(params));
+
         return {
-            statusCode: 200,
+            statusCode: 204,
             body: ''
         }
     } catch (e) {

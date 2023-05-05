@@ -24,11 +24,13 @@ const schema = Joi.object({
 
 export const handler: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = async (event) => {
     try {
-        console.log(event.body);
-        // Todo: userId should match current authed userId (for now, later same organisation and permissions)
         const userId = event?.requestContext?.authorizer?.principalId;
         if(!userId) return jsonResponse({error: 'NOT_AUTHENTICATED'}, 401);
+
+        if (!event.body) return jsonResponse({error: 'MISSING_REQUEST_BODY'}, 400);
+
         const {sk} = event.pathParameters as { userId: string, sk: string };
+
         const command = new GetCommand({
             TableName,
             Key: {
@@ -36,11 +38,9 @@ export const handler: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = asy
                 sk: decodeURIComponent(sk)
             }
         });
-        console.log("DECODED_SK", decodeURIComponent(sk))
         const response = await docClient.send(command);
-        if (!response?.Item) return jsonResponse('', 404);
 
-        if (!event.body) return jsonResponse({error: 'MISSING_REQUEST_BODY'}, 400);
+        if (!response?.Item) return jsonResponse('', 404);
 
         const body = JSON.parse(event.body as string);
         const {error} = schema.validate(body);
@@ -50,8 +50,7 @@ export const handler: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = asy
             TableName,
             Item: {
                 ...response.Item,
-                userId,
-                sk: decodeURIComponent(sk), // Todo: should this use body or path param?
+                sk: decodeURIComponent(sk),
                 name: body.name,
                 style: body.style,
                 country: body.country,
@@ -59,7 +58,6 @@ export const handler: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = asy
                 vintage: body.vintage,
                 vineyard: body.vineyard,
                 score: body.score,
-                tastingNote: body.tastingNote,
                 flavourProfile: body.flavourProfile,
                 updatedAt: (new Date()).toISOString(),
             },

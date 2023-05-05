@@ -11,7 +11,6 @@ const OPEN_AI_API_URL = process.env.OPEN_AI_API_URL;
 const OPEN_AI_API_KEY = process.env.OPEN_AI_API_KEY;
 
 export const handler: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = async (event) => {
-    console.log(event.body);
     const userId = event?.requestContext?.authorizer?.principalId;
 
     const body = JSON.parse(event?.body || '') as { notes?: string, wine?: IWine };
@@ -27,12 +26,16 @@ export const handler: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = asy
     const messages = [
         {
             role: "system", content: trimIndents`
-                You're an experienced and influential wine critic. You have extensive tasting experience, a refined palate and can communicate the many characteristics of a wine. You write consistent tasting notes which describe the specific features and flavours of a wine. 
+                You're an experienced and influential wine critic. 
+                You have extensive tasting experience, a refined palate and can communicate the many characteristics of a wine. 
+                You write consistent tasting notes which describe the specific features and flavours of a wine. 
+                You have deep knowledge of grape varieties and vineyards.
 
                 Some rules to follow:
                 Don't output word counts
                 Don't name the wine unless it's provided
-                Don't mention countries, regions, grape varieties etc., unless they have been provided
+                Don't make stuff up about countries, regions, grape varieties etc.
+                Do use data provided to inform the tasting notes. However, you're not obliged to use all of the details provided in responses
             `
         },
     ];
@@ -49,19 +52,16 @@ export const handler: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = asy
                     region: ${wine.region}
                     vineyard: ${wine.vineyard}
                     vintage: ${wine.vintage}
-                    score: ${wine.score}
                     flavours: ${wine.flavourProfile.join(', ')}
+                    
+                    Find out what you know about this wine, keep it in mind for the text steps.
                 `
             },
         )
-        messages.push({
-            role: "assistant",
-            content: "Thank you, I have the details about the wine."
-        });
     }
 
     messages.push({role: "user", content: trimIndents`
-        Write tasting notes from the following description for a review in a wine magazine, be sure to keep it under the 100-word limit.
+        Based on any existing knowledge you have of the wine and the following tasting notes write a review for a wine magazine, be sure to keep it under the 100-word limit.
         
         ${notes}
     `})

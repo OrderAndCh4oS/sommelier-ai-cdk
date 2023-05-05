@@ -29,13 +29,6 @@ export class SommelierAiCdkStack extends Stack {
             bucketName: envs.BUCKET_NAME,
         });
 
-        /**
-         * pk: userId
-         * wineSk: wineNameSlug_shortUuid
-         * tastingNoteSk: wineNameSk_shortUuid
-         * wineData: style, country, region, vintage, name, score, tastingNote, embedding, status
-         * tastingNoteData: text, searchVector, similarityVector, isActive, createdAt, updatedAt
-         */
         const wineListDb = new Table(this, 'SommelierAi_WineListDb', {
             partitionKey: {name: 'userId', type: AttributeType.STRING},
             sortKey: {name: 'sk', type: AttributeType.STRING},
@@ -43,15 +36,10 @@ export class SommelierAiCdkStack extends Stack {
             writeCapacity: 2,
         });
 
-        wineListDb.addLocalSecondaryIndex({
-            indexName: 'statusKey',
-            sortKey: {name: 'status', type: AttributeType.NUMBER} // enum 1=published, 0=unpublished (other numbers could be used for draft etc.)
-        });
-
-        wineListDb.addLocalSecondaryIndex({
-            indexName: 'tastingNote',
-            sortKey: {name: 'tastingNoteSk', type: AttributeType.STRING} // enum 1=published, 0=unpublished (other numbers could be used for draft etc.)
-        });
+        // wineListDb.addLocalSecondaryIndex({
+        //     indexName: 'statusKey',
+        //     sortKey: {name: 'status', type: AttributeType.NUMBER} // enum 1=published, 0=unpublished (other numbers could be used for draft etc.)
+        // });
 
         const role = new Role(this, 'SommelierAi_Role', {
             roleName: 'sommelier-ai-role',
@@ -112,19 +100,6 @@ export class SommelierAiCdkStack extends Stack {
 
         this.authoriserLogicalId = authorizer.logicalId;
 
-        const completionHandler = new NodejsFunction(this, 'SommelierAi_OpenAiTastingNotesLambda', {
-            ...commonLambdaProps,
-            entry: 'lambda/handlers/openai-queries/completion.ts',
-            timeout: Duration.seconds(12),
-            memorySize: 512,
-            environment: {
-                OPEN_AI_API_URL: envs.OPEN_AI_API_URL,
-                OPEN_AI_API_KEY: envs.OPEN_AI_API_KEY
-            }
-        });
-        const completionResource = api.root.addResource('completion');
-        this.addAuthMethod('post', completionResource, completionHandler);
-
         const chatHandler = new NodejsFunction(this, 'SommelierAi_OpenAiChatTastingNotesLambda', {
             ...commonLambdaProps,
             entry: 'lambda/handlers/openai-queries/chat.ts',
@@ -137,19 +112,6 @@ export class SommelierAiCdkStack extends Stack {
         });
         const chatResource = api.root.addResource('chat');
         this.addAuthMethod('post', chatResource, chatHandler);
-
-        const editHandler = new NodejsFunction(this, 'SommelierAi_OpenAiEditLambda', {
-            ...commonLambdaProps,
-            entry: 'lambda/handlers/openai-queries/edit.ts',
-            timeout: Duration.seconds(12),
-            memorySize: 512,
-            environment: {
-                OPEN_AI_API_URL: envs.OPEN_AI_API_URL,
-                OPEN_AI_API_KEY: envs.OPEN_AI_API_KEY
-            },
-        });
-        const editResource = api.root.addResource('edit');
-        this.addAuthMethod('post', editResource, editHandler);
 
         const recommendationsHandler = new NodejsFunction(this, 'SommelierAi_OpenAiRecommendationsLambda', {
             ...commonLambdaProps,

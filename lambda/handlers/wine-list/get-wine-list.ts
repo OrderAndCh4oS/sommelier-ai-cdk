@@ -12,7 +12,7 @@ export const handler: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = asy
     try {
         const userId = event?.requestContext?.authorizer?.principalId;
         if(!userId) return jsonResponse({error: 'NOT_AUTHENTICATED'}, 401);
-        // Todo: improve this command look up pattern
+
         const command = new QueryCommand({
             TableName,
             KeyConditionExpression: '#userId = :userId and begins_with(sk, :sk)',
@@ -25,9 +25,8 @@ export const handler: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = asy
             }
         });
         const response = await docClient.send(command);
-        if(!response.Items?.length) {
-            return jsonResponse({error: 'NOT_FOUND'}, 404);
-        }
+
+        if(!response.Items?.length) return jsonResponse({error: 'NOT_FOUND'}, 404);
 
         return jsonResponse(response.Items);
     } catch (e) {
