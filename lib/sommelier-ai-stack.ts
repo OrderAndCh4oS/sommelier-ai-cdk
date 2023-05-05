@@ -1,12 +1,21 @@
 import {CfnResource, Duration, Stack, StackProps} from 'aws-cdk-lib';
 
 import {Construct} from 'constructs';
-import {AuthorizationType, CfnAuthorizer, Cors, LambdaIntegration, Resource, RestApi} from "aws-cdk-lib/aws-apigateway";
+import {
+    ApiKey,
+    AuthorizationType,
+    CfnAuthorizer,
+    Cors,
+    LambdaIntegration,
+    Resource,
+    RestApi
+} from "aws-cdk-lib/aws-apigateway";
 import {NodejsFunction} from "aws-cdk-lib/aws-lambda-nodejs";
 import {PolicyDocument, Role, ServicePrincipal} from "aws-cdk-lib/aws-iam";
 import {Environment} from "../bin/environment";
 import {Bucket} from "aws-cdk-lib/aws-s3";
 import {AttributeType, Table} from "aws-cdk-lib/aws-dynamodb";
+import {commonLambdaProps} from './constants';
 
 export class SommelierAiCdkStack extends Stack {
     private authoriserLogicalId: string;
@@ -29,7 +38,9 @@ export class SommelierAiCdkStack extends Stack {
          */
         const wineListDb = new Table(this, 'SommelierAi_WineListDb', {
             partitionKey: {name: 'userId', type: AttributeType.STRING},
-            sortKey: {name: 'sk', type: AttributeType.STRING}
+            sortKey: {name: 'sk', type: AttributeType.STRING},
+            readCapacity: 3,
+            writeCapacity: 2,
         });
 
         wineListDb.addLocalSecondaryIndex({
@@ -67,7 +78,19 @@ export class SommelierAiCdkStack extends Stack {
             }
         });
 
+        const usagePlan = api.addUsagePlan('SommelierAi_UsagePlan', {
+            name: 'General Usage Plan',
+            throttle: {
+                burstLimit: 50,
+                rateLimit: 25,
+            },
+        });
+
+        api.addApiKey('BaseApiKey', {apiKeyName: 'SommelierAi_BaseApiKey'})
+        usagePlan.addApiKey(new ApiKey(this, 'ApiKey', {apiKeyName: 'SommelierAi_UsageApiKey'}));
+
         const authorizerHandler = new NodejsFunction(this, 'SommelierAi_CustomAuthorizer', {
+            ...commonLambdaProps,
             entry: 'lambda/handlers/auth/auth0-authoriser.ts',
             environment: {
                 AUTH0_ISSUER: 'https://gpt-3-auth.eu.auth0.com/',
@@ -90,6 +113,7 @@ export class SommelierAiCdkStack extends Stack {
         this.authoriserLogicalId = authorizer.logicalId;
 
         const completionHandler = new NodejsFunction(this, 'SommelierAi_OpenAiTastingNotesLambda', {
+            ...commonLambdaProps,
             entry: 'lambda/handlers/openai-queries/completion.ts',
             timeout: Duration.seconds(12),
             memorySize: 512,
@@ -102,6 +126,7 @@ export class SommelierAiCdkStack extends Stack {
         this.addAuthMethod('post', completionResource, completionHandler);
 
         const chatHandler = new NodejsFunction(this, 'SommelierAi_OpenAiChatTastingNotesLambda', {
+            ...commonLambdaProps,
             entry: 'lambda/handlers/openai-queries/chat.ts',
             timeout: Duration.seconds(29),
             memorySize: 512,
@@ -114,18 +139,20 @@ export class SommelierAiCdkStack extends Stack {
         this.addAuthMethod('post', chatResource, chatHandler);
 
         const editHandler = new NodejsFunction(this, 'SommelierAi_OpenAiEditLambda', {
+            ...commonLambdaProps,
             entry: 'lambda/handlers/openai-queries/edit.ts',
             timeout: Duration.seconds(12),
             memorySize: 512,
             environment: {
                 OPEN_AI_API_URL: envs.OPEN_AI_API_URL,
                 OPEN_AI_API_KEY: envs.OPEN_AI_API_KEY
-            }
+            },
         });
         const editResource = api.root.addResource('edit');
         this.addAuthMethod('post', editResource, editHandler);
 
         const recommendationsHandler = new NodejsFunction(this, 'SommelierAi_OpenAiRecommendationsLambda', {
+            ...commonLambdaProps,
             entry: 'lambda/handlers/openai-queries/recommendations.ts',
             timeout: Duration.seconds(12),
             memorySize: 2048,
@@ -140,9 +167,8 @@ export class SommelierAiCdkStack extends Stack {
         bucket.grantRead(recommendationsHandler);
 
         const createWineHandler = new NodejsFunction(this, 'SommelierAi_CreateWineLambda', {
+            ...commonLambdaProps,
             entry: 'lambda/handlers/wine-list/create-wine.ts',
-            timeout: Duration.seconds(3),
-            memorySize: 256,
             environment: {
                 TABLE_NAME: wineListDb.tableName,
                 REGION: envs.REGION
@@ -150,9 +176,8 @@ export class SommelierAiCdkStack extends Stack {
         });
 
         const updateWineHandler = new NodejsFunction(this, 'SommelierAi_UpdateWineLambda', {
+            ...commonLambdaProps,
             entry: 'lambda/handlers/wine-list/update-wine.ts',
-            timeout: Duration.seconds(3),
-            memorySize: 256,
             environment: {
                 TABLE_NAME: wineListDb.tableName,
                 REGION: envs.REGION
@@ -160,9 +185,8 @@ export class SommelierAiCdkStack extends Stack {
         });
 
         const deleteWineHandler = new NodejsFunction(this, 'SommelierAi_DeleteWineLambda', {
+            ...commonLambdaProps,
             entry: 'lambda/handlers/wine-list/delete-wine.ts',
-            timeout: Duration.seconds(3),
-            memorySize: 256,
             environment: {
                 TABLE_NAME: wineListDb.tableName,
                 REGION: envs.REGION
@@ -170,9 +194,8 @@ export class SommelierAiCdkStack extends Stack {
         });
 
         const getWineHandler = new NodejsFunction(this, 'SommelierAi_GetWineLambda', {
+            ...commonLambdaProps,
             entry: 'lambda/handlers/wine-list/get-wine.ts',
-            timeout: Duration.seconds(3),
-            memorySize: 256,
             environment: {
                 TABLE_NAME: wineListDb.tableName,
                 REGION: envs.REGION
@@ -180,9 +203,8 @@ export class SommelierAiCdkStack extends Stack {
         });
 
         const getWineListHandler = new NodejsFunction(this, 'SommelierAi_GetWineListLambda', {
+            ...commonLambdaProps,
             entry: 'lambda/handlers/wine-list/get-wine-list.ts',
-            timeout: Duration.seconds(12),
-            memorySize: 256,
             environment: {
                 TABLE_NAME: wineListDb.tableName,
                 REGION: envs.REGION
@@ -190,9 +212,8 @@ export class SommelierAiCdkStack extends Stack {
         });
 
         const addTastingNoteHandler = new NodejsFunction(this, 'SommelierAi_AddTastingNoteLambda', {
+            ...commonLambdaProps,
             entry: 'lambda/handlers/wine-list/add-tasting-note.ts',
-            timeout: Duration.seconds(3),
-            memorySize: 256,
             environment: {
                 TABLE_NAME: wineListDb.tableName,
                 REGION: envs.REGION,
@@ -202,9 +223,8 @@ export class SommelierAiCdkStack extends Stack {
         });
 
         const selectTastingNoteHandler = new NodejsFunction(this, 'SommelierAi_SelectTastingNoteLambda', {
+            ...commonLambdaProps,
             entry: 'lambda/handlers/wine-list/select-tasting-note.ts',
-            timeout: Duration.seconds(3),
-            memorySize: 256,
             environment: {
                 TABLE_NAME: wineListDb.tableName,
                 REGION: envs.REGION,

@@ -31,12 +31,12 @@ export const handler: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = asy
                 userId,
                 sk: body.wineSk,
             },
-            UpdateExpression: 'SET #tastingNoteSk = :tastingNoteSk',
+            UpdateExpression: 'SET #tastingNoteId = :tastingNoteId',
             ExpressionAttributeNames: {
-                '#tastingNoteSk': 'tastingNoteSk'
+                '#tastingNoteId': 'tastingNoteId'
             },
             ExpressionAttributeValues: {
-                ':tastingNoteSk': body.tastingNoteSk
+                ':tastingNoteId': body.tastingNoteId
             },
         };
         await docClient.send(new UpdateCommand(params));

@@ -15,35 +15,21 @@ export const handler: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = asy
         // Todo: improve this command look up pattern
         const command = new QueryCommand({
             TableName,
-            KeyConditionExpression: '#userId = :userId',
+            KeyConditionExpression: '#userId = :userId and begins_with(sk, :sk)',
             ExpressionAttributeNames: {
                 '#userId': 'userId'
             },
             ExpressionAttributeValues: {
-                ':userId': userId
+                ':userId': userId,
+                ':sk': 'WINE'
             }
         });
         const response = await docClient.send(command);
         if(!response.Items?.length) {
             return jsonResponse({error: 'NOT_FOUND'}, 404);
         }
-        const wines = [];
-        const tastingNotes: Record<string, Record<string, any>> = {};
 
-        for(const item of response.Items) {
-            console.log(item.sk, item.sk.includes('NOTE#'))
-            if(!item.sk.includes('NOTE#')) {
-                wines.push(item)
-            } else {
-                tastingNotes[item.sk] = item.text;
-            }
-        }
-
-        for(const wine of wines) {
-            wine.tastingNote = wine.tastingNoteSk ? tastingNotes[wine.tastingNoteSk] : null
-        }
-
-        return jsonResponse(wines);
+        return jsonResponse(response.Items);
     } catch (e) {
         console.log(e)
         return jsonResponse({error: 'REQUEST_FAILURE'}, 500);
