@@ -70,12 +70,13 @@ export const handler: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = asy
         const response = await axios.post(
             OPEN_AI_API_URL + '/chat/completions',
             JSON.stringify({
-                model: "gpt-4",
+                model: "gpt-3.5-turbo",
                 messages,
                 temperature: 0.9,
                 top_p: 1,
                 frequency_penalty: 1,
                 presence_penalty: 0,
+                max_tokens: 1024,
                 n: 3,
                 user: userId
             }),
